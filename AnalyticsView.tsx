@@ -1,5 +1,6 @@
 "use client";
 
+
 /**
  * Dependency-free analytics visualizations.
  * The app deliberately avoids a chart library here: the datasets are small,
