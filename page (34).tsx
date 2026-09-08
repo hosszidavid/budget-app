@@ -1,0 +1,9 @@
+import { requireUser } from "@/lib/auth";
+import { formatMoney } from "@/lib/money";
+import { prisma } from "@/lib/prisma";
+
+export default async function ReceiptsPage(){
+ const user=await requireUser();
+ const receipts=await prisma.receipt.findMany({where:{userId:user.id},include:{merchant:true,lines:true,purchase:true},orderBy:{createdAt:"desc"},take:100});
+ return <main className="page"><div className="page-head"><div><div className="eyebrow">Blokkok</div><h1 className="page-title">Receipt Inbox</h1><p className="muted">A piszkozatok is teljes értékű könyvelt kiadások. A blokkfotó csak addig marad meg, amíg a blokk piszkozat.</p></div><a className="primary" href="/app/add/receipt">+ Blokk</a></div><div className="receipt-list">{receipts.length?receipts.map(r=>{const processed=r.lines.reduce((s,l)=>s+Number(l.amount),0);const declared=Number(r.declaredTotal??0);const diff=declared-processed;const unresolved=r.lines.filter(l=>!l.categoryId).length;const href=r.status==="DRAFT"?`/app/add/receipt?id=${r.id}`:`/app/receipts/${r.id}`;return <a className="receipt-list-row" href={href} key={r.id}><span className={`receipt-status-dot ${r.status.toLowerCase()}`}/><span className="receipt-list-main"><strong>{r.merchant?.name??"Blokk"}</strong><small>{(r.purchaseDate??r.createdAt).toLocaleDateString("hu-HU")} · {r.lines.length} tétel · {r.status==="DRAFT"?"Piszkozat":"Lezárt"}</small></span><span className="receipt-list-math"><strong>{formatMoney(declared,r.currency??"CHF")}</strong><small className={Math.abs(diff)<=0.01&&unresolved===0?"positive":"negative"}>{Math.abs(diff)<=0.01&&unresolved===0?"Egyezik ✓":`Eltérés ${diff.toFixed(2)} · ${unresolved} nyitott`}</small></span><span className="history-chevron">›</span></a>}):<div className="panel empty-state"><p className="muted">Még nincs blokk. A + Blokk gombbal lefotózhatod vagy feltöltheted az elsőt.</p></div>}</div></main>
+}
